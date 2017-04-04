@@ -178,6 +178,8 @@ def load_configuration(configuration_filepath):
         if os.path.exists(filepath):
             with open(filepath, 'r') as fpconfig:
                 config = json.loads(fpconfig.read())
+    else:
+        raise ValueError('File not found: %r.' % configuration_filepath)
     return config
 
 
@@ -200,6 +202,17 @@ def load_parameters(*configs):
         for option, value in config.items():
             setattr(parameters, option, value)
     return parameters
+
+
+class FileHandler(logging.FileHandler):
+    def emit_print(self, record):
+        print(record.msg, record.args)
+
+    def handleError(self, record):
+        type, value, traceback = sys.exc_info()
+        if type is OSError and value.errno == 28:
+            self.emit = self.emit_print
+            raise
 
 
 def log(name, log_path=intelmq.DEFAULT_LOGGING_PATH, log_level="DEBUG",
@@ -239,7 +252,7 @@ def log(name, log_path=intelmq.DEFAULT_LOGGING_PATH, log_level="DEBUG",
     logger.setLevel(log_level)
 
     if not syslog:
-        handler = logging.FileHandler("%s/%s.log" % (log_path, name))
+        handler = FileHandler("%s/%s.log" % (log_path, name))
         handler.setLevel(log_level)
     else:
         if type(syslog) is tuple or type(syslog) is list:

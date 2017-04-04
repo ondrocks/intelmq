@@ -1,4 +1,4 @@
 debian/cron.d/intelmq-update-data etc/cron.d/
 contrib/logrotate/intelmq etc/logrotate.d/intelmq
-intelmq/bots/experts/modify/examples/default.conf debian/intelmq/var/lib/intelmq/bots/modify/modify.conf
+contrib/bash-completion/intelmq.sh etc/bash_completion.d/
 intelmq/bots/experts/modify/examples/* usr/share/doc/intelmq/bots/experts/modify/examples/

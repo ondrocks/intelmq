@@ -49,7 +49,7 @@ Please report any errors you encounter at https://github.com/certtools/intelmq/i
 
 ```bash
 apt-get install python3 python3-pip
-apt-get install git build-essential libcurl4-gnutls-dev libffi-dev
+apt-get install git build-essential libffi-dev
 apt-get install python3-dev
 apt-get install redis-server
 ```
@@ -66,7 +66,7 @@ python3.4 /tmp/get-pip.py
 ```bash
 yum install epel-release
 yum install python34 python34-devel
-yum install git libcurl-devel gcc gcc-c++
+yum install git gcc gcc-c++
 yum install redis
 ```
 
@@ -192,7 +192,7 @@ More examples can be found at `intelmq/etc/pipeline.conf` directory in IntelMQ r
     
     * **`pass`** - will pass to the next message after retry X times, removing from pipeline the current message. If the option `error_dump_message` is enable, the bot will dump the removed message to the dump log.
 
-* **`error_max_retries`** - in case of an error and the value of the `error_procedure` option is `retry`, bot will try to start processing the current message X times defined at `error_max_retries` option. The value must be an `integer value`.
+* **`error_max_retries`** - in case of an error the bot will try to start processing the current message X times defined at `error_max_retries` option. The value must be an integer value.
 
 * **`error_retry_delay`** - in case of an error, this option will allows you to define the number of seconds which bot will wait until next retry. The value must be an `integer value`.
 
@@ -275,6 +275,24 @@ This configuration is used by each bot to load the specific parameters associate
 
 More examples can be found at `intelmq/etc/runtime.conf` directory in IntelMQ repository.
 
+By default all of the bots are started when you start the whole botnet, however there is a possibility to *disable* a bot. This means that the bot will not start every time you start the botnet, but you can start and stop the bot if you specify the bot explicitly. To disable a bot, add the following to your runtime.conf: `"enabled": false`. For example: 
+
+```
+{
+    "malware-domain-list-collector": {
+        "group": "Collector",
+        "name": "Malware Domain List",
+        "module": "intelmq.bots.collectors.http.collector_http",
+        "description": "Malware Domain List Collector is the bot responsible to get the report from source of information.",
+        "enabled": false,
+        "parameters": {
+            "http_url": "http://www.malwaredomainlist.com/updatescsv.php",
+            "feed": "Malware Domain List",
+            "rate_limit": 3600
+        }
+    }
+}
+```
 
 ## Harmonization Configuration
 
@@ -548,6 +566,10 @@ Consult the [FAQ](FAQ.md) if you encountered any problem.
 
 
 # Additional Information
+
+## Bash Completion
+
+To enable bash completion on `intelmqctl` and `intelmqdump` in order to help you run the commands in an easy manner, follow the installation process [here](../contrib/bash-completion/README.md).
 
 ## Performance Tests
 

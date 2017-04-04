@@ -41,7 +41,6 @@ override_dh_auto_install: $(BOTDOCS)
 	mkdir -p debian/intelmq/var/log/intelmq
 	mkdir -p debian/intelmq/var/lib/intelmq/bots/file-output
 	mkdir -p debian/intelmq/etc/logrotate.d
-	mkdir -p debian/intelmq/var/lib/intelmq/bots/modify/
 	## BOTS
 	# Include all bot READMEs
 	for readme in $(foreach bot,$(BOTDOCS),$(subst intelmq/bots/,,$(bot))); \
