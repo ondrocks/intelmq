@@ -29,6 +29,8 @@ class Bot(object):
     """ Not to be reset when initialized again on reload. """
     __current_message = None
     __message_counter = 0
+    # Bot is capable of SIGHUP delaying
+    sighup_delay = True
 
     def __init__(self, bot_id):
         self.__log_buffer = []
@@ -62,7 +64,7 @@ class Bot(object):
             self.logger = utils.log(self.__bot_id, syslog=syslog,
                                     log_path=self.parameters.logging_path,
                                     log_level=self.parameters.logging_level)
-        except:
+        except Exception:
             self.__log_buffer.append(('critical', traceback.format_exc()))
             self.stop()
         else:
@@ -95,8 +97,10 @@ class Bot(object):
         """
         Called when signal is received and postpone.
         """
-        self.logger.info('Received SIGHUP, initializing again later.')
         self.__sighup = True
+        self.logger.info('Received SIGHUP, initializing again later.')
+        if not self.sighup_delay:
+            self.__handle_sighup()
 
     def __handle_sighup(self):
         """
@@ -106,8 +110,8 @@ class Bot(object):
             return False
         self.logger.info('Handling SIGHUP, initializing again now.')
         self.__disconnect_pipelines()
-        self.logger.handlers = []  # remove all existing handlers
         self.shutdown()  # disconnects, stops threads etc
+        self.logger.handlers = []  # remove all existing handlers
         self.__init__(self.__bot_id)
         self.__connect_pipelines()
 
@@ -127,7 +131,7 @@ class Bot(object):
         while True:
             try:
                 if not starting and (error_on_pipeline or error_on_message):
-                    self.logger.info('Bot will continue in %s seconds.' %
+                    self.logger.info('Bot will continue in %s seconds.',
                                      self.parameters.error_retry_delay)
                     time.sleep(self.parameters.error_retry_delay)
 
@@ -177,8 +181,8 @@ class Bot(object):
 
                 if self.parameters.error_log_message:
                     # Dump full message if explicitly requested by config
-                    self.logger.info("Current Message(event): {!r}."
-                                     "".format(self.__current_message))
+                    self.logger.info("Current Message(event): %r.",
+                                     self.__current_message)
 
                 # In case of permanent failures, stop now
                 if isinstance(exc, exceptions.ConfigurationError):
@@ -214,7 +218,7 @@ class Bot(object):
                             self.acknowledge_message()
 
                             # when bot acknowledge the message,
-                            # dont need to wait again
+                            # don't need to wait again
                             error_on_message = False
 
                         # run_mode: scheduled
@@ -256,7 +260,7 @@ class Bot(object):
     def stop(self, exitcode=1):
         try:
             self.shutdown()
-        except:
+        except BaseException:
             pass
 
         self.__disconnect_pipelines()
@@ -288,15 +292,15 @@ class Bot(object):
             self.stop()
 
     def __connect_pipelines(self):
-        self.logger.debug("Loading source pipeline and queue %r." % self.__source_queues)
+        self.logger.debug("Loading source pipeline and queue %r.", self.__source_queues)
         self.__source_pipeline = PipelineFactory.create(self.parameters)
         self.__source_pipeline.set_queues(self.__source_queues, "source")
         self.__source_pipeline.connect()
         self.logger.debug("Connected to source queue.")
 
         if self.__destination_queues:
-            self.logger.debug("Loading destination pipeline and queues %r."
-                              "" % self.__destination_queues)
+            self.logger.debug("Loading destination pipeline and queues %r.",
+                              self.__destination_queues)
             self.__destination_pipeline = PipelineFactory.create(self.parameters)
             self.__destination_pipeline.set_queues(self.__destination_queues,
                                                    "destination")
@@ -324,14 +328,14 @@ class Bot(object):
                 self.logger.warning("Ignoring empty message at sending. Possible bug in bot.")
                 continue
             if not self.__destination_pipeline:
-                raise exceptions.ConfigurationError('pipeline', 'No destination pipline given, '
+                raise exceptions.ConfigurationError('pipeline', 'No destination pipeline given, '
                                                     'but needed')
                 self.stop()
 
             self.logger.debug("Sending message.")
             self.__message_counter += 1
             if self.__message_counter % 500 == 0:
-                self.logger.info("Processed %s messages." % self.__message_counter)
+                self.logger.info("Processed %s messages.", self.__message_counter)
 
             raw_message = libmessage.MessageFactory.serialize(message)
             self.__destination_pipeline.send(raw_message)
@@ -361,7 +365,7 @@ class Bot(object):
             tmp_msg['raw'] = tmp_msg['raw'][:397] + '...'
         else:
             tmp_msg = self.__current_message
-        self.logger.debug('Received message {!r}.'.format(tmp_msg))
+        self.logger.debug('Received message %r.', tmp_msg)
 
         return self.__current_message
 
@@ -390,7 +394,7 @@ class Bot(object):
             with open(dump_file, 'r') as fp:
                 dump_data = json.load(fp)
                 dump_data.update(new_dump_data)
-        except:
+        except ValueError:
             dump_data = new_dump_data
 
         with open(dump_file, 'w') as fp:
@@ -423,7 +427,7 @@ class Bot(object):
                 self.__log_configuration_parameter("system", option, value)
 
     def __load_runtime_configuration(self):
-        self.logger.debug("Loading runtime configuration from %r." % RUNTIME_CONF_FILE)
+        self.logger.debug("Loading runtime configuration from %r.", RUNTIME_CONF_FILE)
         config = utils.load_configuration(RUNTIME_CONF_FILE)
 
         if self.__bot_id in list(config.keys()):
@@ -438,7 +442,7 @@ class Bot(object):
                 self.__log_configuration_parameter("runtime", option, value)
 
     def __load_pipeline_configuration(self):
-        self.logger.debug("Loading pipeline configuration from %r." % PIPELINE_CONF_FILE)
+        self.logger.debug("Loading pipeline configuration from %r.", PIPELINE_CONF_FILE)
         config = utils.load_configuration(PIPELINE_CONF_FILE)
 
         self.__source_queues = None
@@ -471,7 +475,7 @@ class Bot(object):
             self.__log_buffer.append(("debug", message))
 
     def __load_harmonization_configuration(self):
-        self.logger.debug("Loading Harmonization configuration from %r." % HARMONIZATION_CONF_FILE)
+        self.logger.debug("Loading Harmonization configuration from %r.", HARMONIZATION_CONF_FILE)
         self.harmonization = utils.load_configuration(HARMONIZATION_CONF_FILE)
 
     def new_event(self, *args, **kwargs):
@@ -508,9 +512,9 @@ class Bot(object):
             self.proxy = {'http': self.parameters.http_proxy,
                           'https': self.parameters.https_proxy}
         elif self.parameters.http_proxy or self.parameters.https_proxy:
-            self.logger.warning('Only {}_proxy seems to be set.'
-                                'Both http and https proxies must be set.'
-                                .format('http' if self.parameters.http_proxy else 'https'))
+            self.logger.warning('Only %s_proxy seems to be set.'
+                                'Both http and https proxies must be set.',
+                                'http' if self.parameters.http_proxy else 'https')
             self.proxy = None
         else:
             self.proxy = None
@@ -565,7 +569,7 @@ class ParserBot(Bot):
         `self.parse_line` can be saved in `self.tempdata` (list).
 
         Default parser yields stripped lines.
-        Override for your use or use an exisiting parser, e.g.::
+        Override for your use or use an existing parser, e.g.::
 
             parse = ParserBot.parse_csv
 
