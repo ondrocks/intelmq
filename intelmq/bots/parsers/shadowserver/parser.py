@@ -10,18 +10,14 @@ which holds information on how to treat certain shadowserverfeeds.
 Most, if not all, feeds from shadowserver are in csv format.
 This parser will only work with those.
 """
+import copy
 import csv
 import io
-import sys
-import copy
-
-from intelmq.lib import utils
-from intelmq.lib.bot import ParserBot
-from intelmq.lib.message import Event
-
-from intelmq.lib.exceptions import InvalidValue, InvalidKey
 
 import intelmq.bots.parsers.shadowserver.config as config
+from intelmq.lib import utils
+from intelmq.lib.bot import ParserBot
+from intelmq.lib.exceptions import InvalidKey, InvalidValue
 
 
 class ShadowserverParserBot(ParserBot):
@@ -53,6 +49,8 @@ class ShadowserverParserBot(ParserBot):
 
     def parse(self, report):
         raw_report = utils.base64_decode(report["raw"])
+        # Temporary fix for https://github.com/certtools/intelmq/issues/967
+        raw_report = raw_report.translate({0: None})
         csvr = csv.DictReader(io.StringIO(raw_report))
 
         # create an array of fieldnames,
@@ -75,7 +73,7 @@ class ShadowserverParserBot(ParserBot):
         # at the end, all remaining fields are added to the
         # extra field.
 
-        event = Event(report)
+        event = self.new_event(report)
         extra = {}  # The Json-Object which will be populated with the
         # fields that could not be added to the standard intelmq fields
         # the parser is going to write this information into an object
@@ -86,7 +84,7 @@ class ShadowserverParserBot(ParserBot):
 
         if hasattr(self.parameters, 'feedname'):
             if 'feed.name' in event and self.overwrite:
-                event.add('feed.name', self.parameters.feedname, force=True)
+                event.add('feed.name', self.parameters.feedname, overwrite=True)
             elif 'feed.name' not in event:
                 event.add('feed.name', self.parameters.feedname)
 
@@ -94,6 +92,9 @@ class ShadowserverParserBot(ParserBot):
         # Fail hard if not possible:
         for item in conf.get('required_fields'):
             intelmqkey, shadowkey = item[:2]
+            if shadowkey not in fields:  # key does not exist in data (not even in the header)
+                self.logger.warning('Required key %r not found data. Possible change in data'
+                                    ' format or misconfiguration.', shadowkey)
             if len(item) > 2:
                 conv_func = item[2]
             else:
@@ -119,8 +120,8 @@ class ShadowserverParserBot(ParserBot):
         for item in conf.get('optional_fields'):
             intelmqkey, shadowkey = item[:2]
             if shadowkey not in fields:  # key does not exist in data (not even in the header)
-                self.logger.warning('Optional key {!r} not found data. Possible change in data'
-                                    ' format or misconfiguration.')
+                self.logger.warning('Optional key %r not found data. Possible change in data'
+                                    ' format or misconfiguration.', shadowkey)
                 continue
             if len(item) > 2:
                 conv_func = item[2]
@@ -135,9 +136,10 @@ class ShadowserverParserBot(ParserBot):
                 else:
                     try:
                         value = conv_func(raw_value)
-                    except:
-                        self.logger.error('Could not convert shadowkey: "{}", ' +
-                                          'value: "{}" via conversion function {}.'.format(shadowkey, raw_value, repr(conv_func)))
+                    except Exception:
+                        self.logger.error('Could not convert shadowkey: %r, '
+                                          'value: %r via conversion function %r.',
+                                          shadowkey, raw_value, conv_func)
                         value = None
                         # """ fail early and often in this case. We want to be able to convert everything """
                         # self.stop()
@@ -151,11 +153,7 @@ class ShadowserverParserBot(ParserBot):
                     event.add(intelmqkey, value)
                     fields.remove(shadowkey)
                 except InvalidValue:
-                    self.logger.info(
-                        'Could not add key {!r};'
-                        ' adding it to extras...'.format(shadowkey)
-                    )
-                    self.logger.debug('The value of the event is {!r}.'.format(value))
+                    self.logger.debug('Could not add key %r adding it to extras.', shadowkey)
                 except InvalidKey:
                     extra[intelmqkey] = value
                     fields.remove(shadowkey)
@@ -187,6 +185,5 @@ class ShadowserverParserBot(ParserBot):
         writer.writerow(line)
         return out.getvalue()
 
-if __name__ == "__main__":
-    bot = ShadowserverParserBot(sys.argv[1])
-    bot.start()
+
+BOT = ShadowserverParserBot

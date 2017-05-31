@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import socket
-import sys
 import unicodedata
 
 import intelmq.lib.utils as utils
@@ -18,7 +17,7 @@ class UDPBot(Bot):
         self.keep_raw_field = bool(self.parameters.keep_raw_field)
         self.format = self.parameters.format.lower()
         if self.format not in ['json', 'delimited']:
-            self.logger.error('Unknown format %r given. Check your configuration.' % self.format)
+            self.logger.error('Unknown format %r given. Check your configuration.', self.format)
             self.stop()
 
     def process(self):
@@ -46,13 +45,11 @@ class UDPBot(Bot):
         data = utils.encode(self.remove_control_char(rawdata) + '\n')
         try:
             self.udp.sendto(data, self.upd_address)
-        except:
-            self.logger.exception('Failled to sent message to {}:{} !'
-                                  .format(self.udp_host, self.udp_port))
+        except Exception:
+            self.logger.exception('Failed to send message to %s:%s!',
+                                  self.udp_host, self.udp_port)
         else:
             self.acknowledge_message()
 
 
-if __name__ == "__main__":
-    bot = UDPBot(sys.argv[1])
-    bot.start()
+BOT = UDPBot

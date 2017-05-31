@@ -2,8 +2,6 @@
 
 import unittest
 
-import redis
-
 import intelmq.lib.message as message
 import intelmq.lib.test as test
 from intelmq.bots.experts.deduplicator.expert import DeduplicatorExpertBot
@@ -17,6 +15,7 @@ INPUT2 = INPUT1.copy()
 INPUT2['source.ip'] = '192.168.0.4'
 
 
+@test.skip_redis()
 class TestDeduplicatorExpertBot(test.BotTestCase, unittest.TestCase):
     """
     A TestCase for DeduplicatorExpertBot.
@@ -27,19 +26,15 @@ class TestDeduplicatorExpertBot(test.BotTestCase, unittest.TestCase):
         cls.bot_reference = DeduplicatorExpertBot
         cls.default_input_message = INPUT1
         cls.sysconfig = {"redis_cache_ttl": "86400",
-                         "ignore_keys": "raw ,time.observation "}
-        cls.redis = redis.Redis(host=test.BOT_CONFIG['redis_cache_host'],
-                                port=test.BOT_CONFIG['redis_cache_port'],
-                                db=test.BOT_CONFIG['redis_cache_db'],
-                                socket_timeout=5)
-        cls.redis.flushdb()
+                         "filter_type": "blacklist",
+                         "filter_keys": "raw ,time.observation "}
+        cls.use_cache = True
 
     def test_suppress(self):
-        msg = message.MessageFactory.from_dict(INPUT1)
-        msg_hash = hash(msg)
-        self.redis.set(msg_hash, 'hash')
-        self.redis.expire(msg_hash, 3600)
-        self.input_message = INPUT1
+        msg = message.MessageFactory.from_dict(INPUT1, harmonization=self.harmonization)
+        msg_hash = msg.hash()
+        self.cache.set(msg_hash, 'hash')
+        self.cache.expire(msg_hash, 3600)
         self.run_bot()
         self.assertOutputQueueLen()
 
@@ -48,18 +43,31 @@ class TestDeduplicatorExpertBot(test.BotTestCase, unittest.TestCase):
         self.run_bot()
         self.assertMessageEqual(0, INPUT2)
 
-    def test_old_hash(self):
-        self.redis.flushdb()
-        self.redis.set(1241421362111650194, 'hash')
-        self.redis.expire(1241421362111650194, 3600)
-        self.input_message = INPUT1
+    def test_whitelist_suppress(self):
+        self.sysconfig = {"redis_cache_ttl": "86400",
+                          "filter_type": "whitelist",
+                          "filter_keys": "source.ip"}
+        msg = self.new_event()
+        msg.add('source.ip', '127.0.0.8')
+        msg_hash = msg.hash()
+        self.cache.set(msg_hash, 'hash')
+        self.cache.expire(msg_hash, 3600)
+
+        msg.add('destination.ip', '127.0.0.7')
+        self.input_message = msg
         self.run_bot()
         self.assertOutputQueueLen()
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.redis.flushdb()
+    def test_whitelist_pass(self):
+        self.sysconfig = {"redis_cache_ttl": "86400",
+                          "filter_type": "whitelist",
+                          "filter_keys": "source.ip"}
+        msg = self.new_event()
+        msg.add('destination.ip', '127.0.0.7')
+        self.input_message = msg
+        self.run_bot()
+        self.assertMessageEqual(0, msg)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     unittest.main()

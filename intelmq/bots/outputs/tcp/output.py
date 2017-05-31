@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import socket
-import sys
 
 import intelmq.lib.utils as utils
 from intelmq.lib.bot import Bot
@@ -19,8 +18,8 @@ class TCPOutputBot(Bot):
         data = event.to_json(hierarchical=self.parameters.hierarchical_output)
         try:
             self.con.sendall(utils.encode(data) + self.separator)
-        except socket.error as exc:
-            self.logger.exception(exc.args[1] + ". Reconnecting..")
+        except socket.error:
+            self.logger.exception("Reconnecting.")
             self.con.close()
             self.connect()
         except AttributeError:
@@ -31,15 +30,9 @@ class TCPOutputBot(Bot):
 
     def connect(self):
         self.con = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.con.connect(self.address)
-        except:
-            raise
-        else:
-            self.logger.info("Connected successfully to {!s}: {}"
-                             "".format(self.address[0], self.address[1]))
+        self.con.connect(self.address)
+        self.logger.info("Connected successfully to %s:%s.",
+                         self.address[0], self.address[1])
 
 
-if __name__ == "__main__":
-    bot = TCPOutputBot(sys.argv[1])
-    bot.start()
+BOT = TCPOutputBot

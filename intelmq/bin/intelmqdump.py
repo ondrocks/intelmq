@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-
-
-TODO: check if action is allowed when called
 """
 import argparse
 import glob
@@ -70,7 +67,7 @@ AVAILABLE_IDS = [key for key, value in ACTIONS.items() if value[1]]
 
 
 def dump_info(fname):
-    info = red('unknwon error')
+    info = red('unknown error')
     if not os.path.getsize(fname):
         info = red('empty file')
     else:
@@ -131,7 +128,7 @@ def main():
     parser.add_argument('botid', metavar='botid', nargs='?',
                         default=None, help='botid to inspect dumps of')
     args = parser.parse_args()
-    ctl = intelmqctl.IntelMQContoller()
+    ctl = intelmqctl.IntelMQController()
 
     if args.botid is None:
         filenames = glob.glob(os.path.join(DEFAULT_LOGGING_PATH, '*.dump'))
@@ -142,12 +139,13 @@ def main():
                      for fname in sorted(filenames)]
 
         length = max([len(value[1]) for value in filenames])
-        print(bold("{c:>3}: {s:{l}} {i}".format(c='id', s='name (bot id)',
-                                                i='content', l=length)))
+        print(bold("{c:>3}: {s:{length}} {i}".format(c='id', s='name (bot id)',
+                                                     i='content',
+                                                     length=length)))
         for count, (fname, shortname) in enumerate(filenames):
             info = dump_info(fname)
-            print("{c:3}: {s:{l}} {i}".format(c=count, s=shortname, i=info,
-                                              l=length))
+            print("{c:3}: {s:{length}} {i}".format(c=count, s=shortname, i=info,
+                                                   length=length))
         try:
             botid = input(inverted('Which dump file to process (id or name)?') +
                           ' ')
@@ -172,10 +170,12 @@ def main():
     answer = None
     while True:
         info = dump_info(fname)
+        available_answers = ACTIONS.keys()
         print('Processing {}: {}'.format(bold(botid), info))
 
         if info.startswith(str(red)):
             available_opts = [item[0] for item in ACTIONS.values() if item[2]]
+            available_answers = [k for k, v in ACTIONS.items() if v[2]]
             print('Restricted actions.')
         else:
             # don't display list after 'show' and 'recover' command
@@ -188,11 +188,16 @@ def main():
                     print('{:3}: {} {}'.format(count, *line))
 
         # Determine bot status
-        bot_status = ctl.bot_status(botid)
-        if bot_status == 'running':
-            print(red('Attention: This bot is currently running!'))
-        elif bot_status == 'error':
+        try:
+            bot_status = ctl.bot_status(botid)
+            if bot_status == 'running':
+                print(red('Attention: This bot is currently running!'))
+        except KeyError:
+            bot_status = 'error'
             print(red('Attention: This bot is not defined!'))
+            available_opts = [item[0] for item in ACTIONS.values() if item[2]]
+            available_answers = [k for k, v in ACTIONS.items() if v[2]]
+            print('Restricted actions.')
 
         try:
             answer = input(inverted(', '.join(available_opts) + '?') + ' ').split()
@@ -201,6 +206,9 @@ def main():
         else:
             if not answer:
                 continue
+        if len(answer) == 0 or answer[0] not in available_answers:
+            print('Action not allowed.')
+            continue
         if any([answer[0] == char for char in AVAILABLE_IDS]) and len(answer) > 1:
             ids = [int(item) for item in answer[1].split(',')]
         else:
@@ -282,5 +290,6 @@ def main():
                     value['traceback'] = value['traceback'].splitlines()
                 pprint.pprint(value)
 
-if __name__ == '__main__':
+
+if __name__ == '__main__':  # pragma: no cover
     main()

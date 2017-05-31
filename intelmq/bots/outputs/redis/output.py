@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-import sys
-
-from intelmq.lib.bot import Bot
 
 import redis
+
+from intelmq.lib.bot import Bot
 
 
 class RedisOutputBot(Bot):
@@ -24,7 +23,7 @@ class RedisOutputBot(Bot):
 
         try:
             self.output.lpush(self.queue, event)
-        except:
+        except Exception:
             self.logger.exception('Failed to send message. Reconnecting.')
             self.connect()
         else:
@@ -35,12 +34,11 @@ class RedisOutputBot(Bot):
             self.output = redis.StrictRedis(connection_pool=self.conn, socket_timeout=self.timeout, password=self.password)
             info = self.output.info()
         except redis.ConnectionError:
-            self.logger.exception("Redis connection to {}:{} failed!!".format(self.host, self.port))
+            self.logger.exception("Redis connection to %s:%s failed!", self.host, self.port)
             self.stop()
         else:
-            self.logger.info("Connected successfully to Redis {} at {}:{}!".format(info['redis_version'], self.host, self.port))
+            self.logger.info("Connected successfully to Redis %s at %s:%s!",
+                             info['redis_version'], self.host, self.port)
 
 
-if __name__ == "__main__":
-    bot = RedisOutputBot(sys.argv[1])
-    bot.start()
+BOT = RedisOutputBot

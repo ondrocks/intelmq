@@ -2,7 +2,6 @@
 """
 pymongo library automatically tries to reconnect if connection has been lost
 """
-import sys
 
 from intelmq.lib.bot import Bot
 
@@ -22,16 +21,24 @@ class MongoDBOutputBot(Bot):
         self.connect()
 
     def connect(self):
-        self.logger.info('Connecting to mongodb server.')
+        self.logger.debug('Connecting to MongoDB server.')
         try:
             self.client = pymongo.MongoClient(self.parameters.host,
                                               int(self.parameters.port))
         except pymongo.errors.ConnectionFailure:
-            raise ValueError('Connection to mongodb server failed.')
+            raise ValueError('Connection to MongoDB server failed.')
         else:
             db = self.client[self.parameters.database]
+            if hasattr(self.parameters, 'db_user') and hasattr(self.parameters, 'db_pass'):
+                self.logger.debug('Trying to authenticate to database %s.',
+                                  self.parameters.database)
+                try:
+                    db.authenticate(name=self.parameters.db_user,
+                                    password=self.parameters.db_pass)
+                except pymongo.errors.OperationFailure:
+                    raise ValueError('Authentication to database {} failed'.format(self.parameters.database))
             self.collection = db[self.parameters.collection]
-            self.logger.info('Successfully connected to mongodb server.')
+            self.logger.info('Successfully connected to MongoDB server.')
 
     def process(self):
         event = self.receive_message()
@@ -48,6 +55,4 @@ class MongoDBOutputBot(Bot):
         self.client.close()
 
 
-if __name__ == "__main__":
-    bot = MongoDBOutputBot(sys.argv[1])
-    bot.start()
+BOT = MongoDBOutputBot

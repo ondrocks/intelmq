@@ -5,8 +5,6 @@ import unittest
 
 import intelmq.lib.test as test
 import intelmq.lib.utils as utils
-import pprint
-
 from intelmq.bots.parsers.shadowserver.parser import ShadowserverParserBot
 
 with open(os.path.join(os.path.dirname(__file__), 'xdmcp.csv')) as handle:
@@ -17,8 +15,6 @@ with open(os.path.join(os.path.dirname(__file__),
                        'xdmcp_RECONSTRUCTED.csv')) as handle:
     RECONSTRUCTED_FILE = handle.read()
 RECONSTRUCTED_LINES = RECONSTRUCTED_FILE.splitlines()
-
-pprint.pprint(RECONSTRUCTED_LINES)
 
 EXAMPLE_REPORT = {"feed.name": "ShadowServer XDMCP",
                   "raw": utils.base64_encode(EXAMPLE_FILE),
@@ -203,5 +199,5 @@ class TestShadowserverParserBot(test.BotTestCase, unittest.TestCase):
             self.assertMessageEqual(i, EVENT)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     unittest.main()

@@ -2,7 +2,6 @@
 """
 See README for database download.
 """
-import sys
 
 from intelmq.lib.bot import Bot
 
@@ -28,18 +27,22 @@ class TorExpertBot(Bot):
             self.logger.critical("TOR rule not defined or failed on open.")
             self.stop()
 
+        self.overwrite = getattr(self.parameters, 'overwrite', False)
+
     def process(self):
         event = self.receive_message()
 
         for key in ["source.", "destination."]:
-            if event.contains(key + 'ip'):
-                if event.get(key + 'ip') in self.database:
-                    event.add(key + 'tor_node', True)
+            if key + 'ip' in event:
+                if key + 'tor_node' not in event:
+                    if event.get(key + 'ip') in self.database:
+                        event.add(key + 'tor_node', True)
+                elif key + 'tor_node' in event and self.overwrite:
+                    if event.get(key + 'ip') in self.database:
+                        event.change(key + 'tor_node', True)
 
         self.send_message(event)
         self.acknowledge_message()
 
 
-if __name__ == "__main__":
-    bot = TorExpertBot(sys.argv[1])
-    bot.start()
+BOT = TorExpertBot

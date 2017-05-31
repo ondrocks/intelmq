@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-import sys
+
+from intelmq.lib.bot import Bot
 
 try:
     import pika
 except ImportError:
     pika = None
-
-from intelmq.lib.bot import Bot
 
 
 class AMQPTopicBot(Bot):
@@ -38,9 +37,8 @@ class AMQPTopicBot(Bot):
         self.connect_server()
 
     def connect_server(self):
-        self.logger.info('AMQP Connecting to {}:{}{}.'.format(self.connection_host,
-                                                              self.connection_port,
-                                                              self.connection_vhost))
+        self.logger.info('AMQP Connecting to %s:%s%s.',
+                         self.connection_host, self.connection_port, self.connection_vhost)
         try:
             self.connection = pika.BlockingConnection(self.connection_parameters)
         except pika.exceptions.ProbableAuthenticationError:
@@ -53,7 +51,7 @@ class AMQPTopicBot(Bot):
             self.logger.error('AMQP connection failed!')
             raise
         else:
-            self.logger.info('AMQP connection succesfull.')
+            self.logger.info('AMQP connection successful.')
             self.channel = self.connection.channel()
             try:
                 self.channel.exchange_declare(exchange=self.exchange, type=self.exchange_type,
@@ -91,6 +89,5 @@ class AMQPTopicBot(Bot):
         else:
             self.acknowledge_message()
 
-if __name__ == "__main__":
-    bot = AMQPTopicBot(sys.argv[1])
-    bot.start()
+
+BOT = AMQPTopicBot

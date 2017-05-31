@@ -13,7 +13,7 @@ EXAMPLE_INPUT = {"__type": "Event",
                  }
 EXAMPLE_OUTPUT = {"__type": "Event",
                   "source.ip": "93.184.216.34",
-                  "source.abuse_contact": "abuse@edgecast.com",
+                  "source.abuse_contact": "abuse@verizondigitalmedia.com",
                   "destination.ip": "193.238.157.5",
                   "destination.abuse_contact": "abuse@funkfeuer.at",
                   "destination.asn": 35492,
@@ -30,6 +30,7 @@ EXAMPLE_OUTPUT6 = {"__type": "Event",
                    }
 
 
+@test.skip_internet()
 class TestRIPENCCExpertBot(test.BotTestCase, unittest.TestCase):
     """
     A TestCase for AbusixExpertBot.
@@ -54,5 +55,5 @@ class TestRIPENCCExpertBot(test.BotTestCase, unittest.TestCase):
         self.assertMessageEqual(0, EXAMPLE_OUTPUT6)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     unittest.main()

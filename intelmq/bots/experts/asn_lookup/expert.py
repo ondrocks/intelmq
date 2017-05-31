@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 """
-import sys
 from intelmq.lib.bot import Bot
-from intelmq.lib.harmonization import IPAddress
 
 try:
     import pyasn
@@ -22,9 +20,9 @@ class ASNLookupExpertBot(Bot):
             self.database = pyasn.pyasn(self.parameters.database)
         except IOError:
             self.logger.error("pyasn data file does not exist or could not be "
-                              "accessed in '%s'" % self.parameters.database)
+                              "accessed in %r.", self.parameters.database)
             self.logger.error("Read 'bots/experts/asn_lookup/README' and "
-                              "follow the procedure")
+                              "follow the procedure.")
             self.stop()
 
     def process(self):
@@ -36,21 +34,19 @@ class ASNLookupExpertBot(Bot):
             asn_key = key + "asn"
             bgp_key = key + "network"
 
-            if not event.contains(ip_key):
+            if ip_key not in event:
                 continue
 
             info = self.database.lookup(event.get(ip_key))
 
             if info:
                 if info[0]:
-                    event.add(asn_key, str(info[0]), force=True)
+                    event.add(asn_key, str(info[0]), overwrite=True)
                 if info[1]:
-                    event.add(bgp_key, str(info[1]), force=True)
+                    event.add(bgp_key, str(info[1]), overwrite=True)
 
         self.send_message(event)
         self.acknowledge_message()
 
 
-if __name__ == "__main__":
-    bot = ASNLookupExpertBot(sys.argv[1])
-    bot.start()
+BOT = ASNLookupExpertBot
