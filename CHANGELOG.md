@@ -1,14 +1,43 @@
 CHANGELOG
 ==========
 
-v1.0.0.dev7 (in development, master branch)
+in development
+--------------
+
+### Configuration
+- `http_timeout` has been renamed to `http_timeout_sec` and `http_timeout_max_tries` has been added.
+   This setting is honored by bots.collectors.http.* and bots.collectors.mail.collector_mail_url, bots.collectors.rt (only `http_timeout_sec`), bots.outputs.restapi.output and bots.experts.ripencc_abuse_contact
+
+### Documentation
+- Dropped install scripts, see INSTALL.md for more detailed instructions and explanations
+
+### Core
+- fix bug which prevented dumps to be written if the file did not exist (https://github.com/certtools/intelmq/pull/986)
+
+### Bots
+- added bots.experts.idea, bots.outputs.files
+- possibility to split large csv Reports into Chunks, currently possible for mail url and file collector
+
+### Harmonization
+- New field named output to support export to foreign formats
+
+v1.0.0.dev7
 -----------
 
+### Documentation
+- more verbose installation and upgrade instructions
+
 ### Bot changes
-- ENH: added bots.experts.field_reducer.expert
+- added bots.experts.field_reducer, bots.outputs.smtp
+- bots.collectors.alienvault_otx: OTX library has been removed, install it as package instead
+- bots.experts.deduplicator: `ignore_keys` has been renamed to `filter_keys` and `filter_type` has been removed.
+- bots.experts.modify: The configration is now list-based for a consistent ordering
+- bots.experts.tor_node as an optional parameter `overwrite`
+- API keys will be removed from feed.url if possible
 
 ### Harmonization
 - New parameter and field named feed.documentation to link to documentation of the feed
+- classification.taxonomy is lower case only
 
 v1.0.0.dev6
 -----------

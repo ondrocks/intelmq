@@ -1,9 +1,11 @@
 {
     "Collector": {
-        "Fileinput": {
+        "File": {
             "description": "Fileinput collector fetches data from a file.",
             "module": "intelmq.bots.collectors.file.collector_file",
             "parameters": {
+                "chunk_replicate_header": true,
+                "chunk_size": null,
                 "delete_file": false,
                 "feed": "FileCollector",
                 "provider": "",
@@ -33,6 +35,8 @@
             "description": "Monitor IMAP mailboxes and fetch files from URLs contained in mail bodies",
             "module": "intelmq.bots.collectors.mail.collector_mail_url",
             "parameters": {
+                "chunk_replicate_header": true,
+                "chunk_size": null,
                 "feed": "",
                 "provider": "",
                 "folder": "INBOX",
@@ -114,7 +118,7 @@
                 "ssl_client_certificate": null
             }
         },
-        "XMPP collector": {
+        "XMPP": {
             "description": "This bot can connect to an XMPP Server and one room, in order to receive reports from it. TLS is used by default. rate_limit is ineffective here. Bot can either pass the body or the whole event.",
             "module": "intelmq.bots.collectors.xmpp.collector",
             "parameters": {
@@ -516,6 +520,13 @@
             "module": "intelmq.bots.experts.gethostbyname.expert",
             "parameters": {}
         },
+        "IDEA": {
+            "description": "Converts events into the IDEA format.",
+            "module": "intelmq.bots.experts.idea.expert",
+            "parameters": {
+                "test_mode": false
+            }
+        },
         "MaxMind GeoIP": {
             "description": "MaxMind GeoIP is the bot responsible for adding geolocation information to events (Country, City, Longitude, Latitude, etc..)",
             "module": "intelmq.bots.experts.maxmind_geoip.expert",
@@ -625,6 +636,17 @@
             "parameters": {
                 "file": "/opt/intelmq/var/lib/bots/file-output/events.txt",
                 "hierarchical_output": false
+            }
+        },
+        "Files": {
+            "description": "Files is the bot responsible for lockfree saving of events into separate files.",
+            "module": "intelmq.bots.outputs.files.output",
+            "parameters": {
+                "tmp": "/opt/intelmq/var/lib/bots/files-output/tmp",
+                "dir": "/opt/intelmq/var/lib/bots/files-output/incoming",
+                "suffix": ".json",
+                "hierarchical_output": false,
+                "single_key": null
             }
         },
         "MongoDB": {

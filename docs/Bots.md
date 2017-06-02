@@ -71,6 +71,8 @@ This configuration resides in the file `runtime.conf` in your intelmq's configur
 
 **HTTP parameters**: Common URL fetching parameters used in multiple collectors
 
+* `http_timeout_sec`: A tuple of floats or only one float describing the timeout of the http connection. Can be a tuple of two floats (read and connect timeout) or just one float (applies for both timeouts). The default is 30 seconds in default.conf, if not given no timeout is used. See also https://requests.readthedocs.io/en/master/user/advanced/#timeouts
+* `http_timeout_max_tries`: An integer depciting how often a connection is retried, when a timeout occured. Defaults to 3 in default.conf.
 * `http_username`: username for basic authentication.
 * `http_password`: password for basic authentication.
 * `http_proxy`: proxy to use for http
@@ -79,8 +81,6 @@ This configuration resides in the file `runtime.conf` in your intelmq's configur
 * `http_verify_cert`: path to trusted CA bundle or directory, `false` to ignore verifying SSL certificates,  or `true` (default) to verify SSL certificates
 * `ssl_client_certificate`: SSL client certificate to use.
 * `http_header`: HTTP request headers
-* `http_timeout`: Seconds for read and connect timeout. Can be one float (applies for both timeouts) or a tuple of two floats. Default: 60 seconds. See also https://requests.readthedocs.io/en/master/user/advanced/#timeouts
-
 
 
 ### Generic URL Fetcher
@@ -116,10 +116,11 @@ This configuration resides in the file `runtime.conf` in your intelmq's configur
 
 * **Feed parameters** (see above)
 * **HTTP parameters** (see above)
-* `http_url`: location of HTTP streaming resource
 * `strip_lines`: boolean, if single lines should be stripped (removing whitespace from the beginning and the end of the line)
 
 If the stream is interrupted, the connection will be aborted using the timeout parameter. Then, an error will be thrown and rate_limit applies if not null.
+The parameter `http_timeout_max_tries` is of no use in this collector.
+
 
 * * *
 
@@ -238,6 +239,7 @@ If the stream is interrupted, the connection will be aborted using the timeout p
 * `attachment_regex`: regular expression of an attachment in the ticket
 * `unzip_attachment`: whether to unzip a found attachment
 
+The parameter `http_timeout_max_tries` is of no use in this collector.
 * * *
 
 ### XMPP collector
@@ -522,6 +524,21 @@ none
 
 * * *
 
+### IDEA
+
+#### Information:
+* `name:` idea
+* `lookup:` local config
+* `public:` yes
+* `cache (redis db):` none
+* `description:` The bot does a best effort translation of events into the IDEA format.
+
+#### Configuration Parameters:
+
+* `test_mode`: add `Test` category to mark all outgoing IDEA events as informal (meant to simplify setting up and debugging new IDEA producers) (default: `true`)
+
+* * *
+
 ### MaxMind GeoIP
 
 See the README.md
@@ -755,6 +772,27 @@ FIXME
 #### Configuration Parameters:
 
 * `file`: file path of output file
+
+
+* * *
+
+
+### Files
+
+#### Information:
+* `name:` files
+* `lookup:` no
+* `public:` yes
+* `cache (redis db):` none
+* `description:` saving of messages as separate files
+
+#### Configuration Parameters:
+
+* `dir`: output directory (default `/opt/intelmq/var/lib/bots/files-output/incoming`)
+* `tmp`: temporary directory (must reside on the same filesystem as `dir`) (default: `/opt/intelmq/var/lib/bots/files-output/tmp`)
+* `suffix`: extension of created files (default `.json`)
+* `hierarchical_output`: if `true`, use nested dictionaries; if `false`, use flat structure with dot separated keys (default)
+* `single_key`: if `none`, the whole event is saved (default); otherwise the bot saves only contents of the specified key
 
 
 * * *
