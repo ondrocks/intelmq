@@ -1,8 +1,8 @@
 from .version import __version__
 import os
 
-ROOT_DIR = "/opt/intelmq/"
-CONFIG_DIR = os.path.join(ROOT_DIR, "etc/")
+ROOT_DIR = "/"
+CONFIG_DIR = "/etc/intelmq"
 DEFAULT_LOGGING_LEVEL = "INFO"
 BOTS_FILE = os.path.join(CONFIG_DIR, "BOTS")
 DEFAULT_LOGGING_PATH = os.path.join(ROOT_DIR, "var/log/")
