@@ -124,6 +124,7 @@ class BotTestCase(object):
         cls.pipe = None
         cls.sysconfig = {}
         cls.use_cache = False
+        cls.allowed_warning_count = 0
         cls.allowed_error_count = 0  # allows dumping of some lines
 
         cls.set_bot()
@@ -255,6 +256,7 @@ class BotTestCase(object):
                                                self.bot_id), "INFO")
         self.assertRegexpMatchesLog("INFO - Bot is starting.")
         self.assertLoglineEqual(-1, "Bot stopped.", "INFO")
+        self.assertNotRegexpMatchesLog("(WARNING.*?){%d}" % (self.allowed_warning_count + 1))
         self.assertNotRegexpMatchesLog("(ERROR.*?){%d}" % (self.allowed_error_count + 1))
         self.assertNotRegexpMatchesLog("CRITICAL")
         """ If no error happened (incl. tracebacks, we can check for formatting) """
